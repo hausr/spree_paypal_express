@@ -12,4 +12,32 @@ class Spree::BillingIntegration::PaypalExpress < Spree::BillingIntegration
   def provider_class
     ActiveMerchant::Billing::PaypalExpressGateway
   end
+  
+  def payment_profiles_supported?
+    true
+  end
+
+  def capture(payment, source, gateway_options)
+    authorization = find_authorization(payment)
+    provider.capture(
+      (payment.amount * 100).round, 
+      authorization.params["transaction_id"], 
+      :currency => payment.payment_method.preferred_currency
+    )
+  end
+
+  private
+
+  def find_authorization(payment)
+    logs = payment.log_entries.all(:order => 'created_at DESC')
+    logs.each do |log|
+      details = YAML.load(log.details) # return the transaction details
+      if (details.params['payment_status'] == 'Pending' && details.params['pending_reason'] == 'authorization')
+        return details
+      end
+    end
+    return nil
+  end
+  
+  
 end
