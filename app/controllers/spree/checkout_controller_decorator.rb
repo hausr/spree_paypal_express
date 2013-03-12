@@ -149,6 +149,7 @@ module Spree
         state_callback(:after) # So that after_complete is called, setting session[:order_id] to nil
         @order.finalize!
         flash[:notice] = I18n.t(:order_processed_successfully)
+        flash[:commerce_tracking] = "true"
         redirect_to completion_route
 
       else
@@ -239,7 +240,7 @@ module Spree
       items = order.line_items.map do |item|
         price = (item.price * 100).to_i # convert for gateway
         { :name        => item.variant.product.name,
-          :description => (item.variant.product.description[0..120] if item.variant.product.description),
+          :description => (item.variant.product.description[0..120].gsub(/<\/?[^>]*>/, "") if item.variant.product.description),
           :sku         => item.variant.sku,
           :quantity    => item.quantity,
           :amount      => price,
